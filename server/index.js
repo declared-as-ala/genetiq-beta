@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/auth2");
+const { getCookie, notFound } = require("./controllers/errorHandler");
 const messageRoutes = require("./routes/messages");
 const app = express();
 const socket = require("socket.io");
@@ -26,8 +27,11 @@ app.get("/ping", (_req, res) => {
   return res.json({ msg: "Ping Successful" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/messages", messageRoutes);
+// app.use("/api/auth", authRoutes);
+
+getCookie();
+
+// app.use("/api/messages", messageRoutes);
 
 const server = app.listen(3003, () =>
   console.log(`Server started on 3003`)

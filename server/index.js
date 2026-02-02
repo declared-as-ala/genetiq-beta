@@ -1,59 +1,90 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth2");
-const { getCookie, notFound } = require("./controllers/errorHandler");
-const messageRoutes = require("./routes/messages");
+const express = require('express');
+const mongoose = require('mongoose');
+const methodOverride = require('method-override');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const csurf = require('csurf');
+const helmetConfig = require('./config/helmetConfig');
+const path = require('path');
+const auth = require('./middleware/auth');
+const cookieParser = require('cookie-parser');
+
+dotenv.config();
+
 const app = express();
-const socket = require("socket.io");
-require("dotenv").config();
 
+// View engine ejs
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+app.use(helmetConfig);
 app.use(cors());
+app.use(cookieParser());
+
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// mongoose
-//   .connect(process.env.MONGO_URL, {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-//   })
-//   .then(() => {
-//     console.log("DB Connetion Successfull");
-//   })
-//   .catch((err) => {
-//     console.log(err.message);
-//   });
+// Middleware to serve static files
+app.use(express.static('public'));
 
-app.get("/ping", (_req, res) => {
-  return res.json({ msg: "Ping Successful" });
+
+// Load 'method-override' to handel  PUT and DELETE through POST, DONT TOUCH
+app.use(methodOverride((req, res) => {
+  console.log(`Interceptando método: ${req.method}, _method: ${req.body._method}`);
+  if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+      return req.body._method;
+  }
+  return req.method;
+}));
+
+// Protección CSRF
+const csrfProtection = csurf({
+    cookie: true
+  })
+app.use(csrfProtection);
+
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken(); 
+    next();
 });
 
-// app.use("/api/auth", authRoutes);
-
-getCookie();
-
-// app.use("/api/messages", messageRoutes);
-
-const server = app.listen(3003, () =>
-  console.log(`Server started on 3003`)
-);
-const io = socket(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    credentials: true,
-  },
-});
-
-global.onlineUsers = new Map();
-io.on("connection", (socket) => {
-  global.chatSocket = socket;
-  socket.on("add-user", (userId) => {
-    onlineUsers.set(userId, socket.id);
-  });
-
-  socket.on("send-msg", (data) => {
-    const sendUserSocket = onlineUsers.get(data.to);
-    if (sendUserSocket) {
-      socket.to(sendUserSocket).emit("msg-recieve", data.msg);
-    }
+// Routes
+app.get('/', (req, res) => {
+  res.render('login', {
+    title: 'Login',
+    csrfToken: req.csrfToken()  
   });
 });
+
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use(auth);  // Middleware de autenticación
+app.use('/api/patients', require('./routes/patientRoutes'));
+app.use('/api/doctors', require('./routes/doctorRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
+
+
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => {
+  console.log('MongoDB connected');
+})
+.catch(err => {
+  const mockReq = {data:"DB_CONNECTION_ERROR"};
+  const mockRes = {
+    status() { return this; },
+    json() {}
+  };
+  const mockNext = () => {};
+  errorHandler(err, mockReq, mockRes, mockNext);
+});
+

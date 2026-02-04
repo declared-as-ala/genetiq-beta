@@ -9,6 +9,9 @@ import { DetailsCard } from "./Components/DetailsCard/DetailsCard";
 import { ReasonsTable } from "./Components/ReasonsTable/ReasonsTable";
 import { SymptomsList } from "./Components/SymptomsList/SymptomsList";
 import { PlanWidget } from "../PlanWidget/PlanWidget";
+import { useSelector } from "react-redux";
+import { RootState } from "@/App/Redux/store";
+import { getTranslation } from "../utils/i18n";
 
 interface ConcernsWidgetProps {
 	category: string;
@@ -17,6 +20,10 @@ interface ConcernsWidgetProps {
 export const ConcernsWidget: React.FC<ConcernsWidgetProps> = ({ category }) => {
 	const [isShowMore, setIsShowMore] = useState(false);
 	const [detailIndex, setDetailIndex] = useState(1);
+	const currentLanguage = useSelector(
+		(state: RootState) => state.language.currentLanguage,
+	);
+	const t = getTranslation(currentLanguage);
 
 	const concernsToShow = isShowMore
 		? concernsMockData
@@ -40,7 +47,7 @@ export const ConcernsWidget: React.FC<ConcernsWidgetProps> = ({ category }) => {
 			<div className={styles["ConcernWidget-head"]}>
 				<div className={styles["ConcernWidget-tab-container"]}>
 					<div className={styles["ConcernWidget-tab"]}>
-						Key Areas of Concern
+						{t.concerns.keyAreasOfConcern}
 					</div>
 					<Slope className={styles["ConcernWidget-slope"]} />
 				</div>
@@ -50,7 +57,7 @@ export const ConcernsWidget: React.FC<ConcernsWidgetProps> = ({ category }) => {
 					onClick={() => handleShowMore()}
 				>
 					<p className={styles["ConcernWidget-more-text"]}>
-						{isShowMore ? "Show Less" : "Show all"}
+						{isShowMore ? t.concerns.showLess : t.concerns.showAll}
 					</p>
 					<div className={styles["ConcernWidget-chevron-container"]}>
 						<Chevron

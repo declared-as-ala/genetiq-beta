@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import NavBar from "@/Features/Structural/NavBar/Navbar";
 import styles from "./Dashboard.module.scss";
 import { TrackerWidget } from "@/Features/Dashboard/TrackerWidget/TrackerWidget";
@@ -11,19 +11,41 @@ import { ConcernsWidget } from "@/Features/Dashboard/ConcernsWidget/ConcernsWidg
 import { SystemDetailWidget } from "@/Features/Dashboard/SystemDetailWidget/SystemDetailWidget";
 import { useSelector } from "react-redux";
 import { RootState } from "@/App/Redux/store";
+import { LanguageSwitcher } from "@/Features/Dashboard/Components/LanguageSwitcher/LanguageSwitcher";
+import { ThemeSwitcher } from "@/Features/Dashboard/Components/ThemeSwitcher/ThemeSwitcher";
+import { applyTheme } from "@/Features/Dashboard/utils/theme";
 
 const Dashboard = () => {
 	const [isNotFirstAnimation, setIsNotFirstAnimation] = useState(false);
 	const selectedCategory = useSelector(
 		(state: RootState) => state.category.selectedCategory,
 	);
+	const currentTheme = useSelector(
+		(state: RootState) => state.theme.currentTheme,
+	);
 	const [category, setCategory] = useState(selectedCategory || "total");
+	const dashboardRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (selectedCategory !== "total") {
 			setIsNotFirstAnimation(true);
 		}
 	}, [selectedCategory]);
+
+	// Apply theme on mount and when theme changes
+	useEffect(() => {
+		if (dashboardRef.current) {
+			applyTheme(currentTheme, dashboardRef.current);
+		}
+	}, [currentTheme]);
+
+	// Ensure theme is applied on initial mount
+	useEffect(() => {
+		if (dashboardRef.current) {
+			applyTheme(currentTheme, dashboardRef.current);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleAnimationStart = () => {
 		const timeout = setTimeout(() => {
@@ -33,8 +55,12 @@ const Dashboard = () => {
 	};
 
 	return (
-		<div className={styles["Dashboard-layout"]}>
+		<div ref={dashboardRef} className={styles["Dashboard-layout"]}>
 			<NavBar />
+			<div className={styles["Dashboard-controls"]}>
+				<LanguageSwitcher />
+				<ThemeSwitcher />
+			</div>
 			<div className={styles["Dashboard-select"]}></div>
 			<CameraProvider>
 				<div className={styles["Dashboard-content"]}>

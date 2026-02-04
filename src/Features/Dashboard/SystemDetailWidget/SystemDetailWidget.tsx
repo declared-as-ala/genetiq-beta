@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/App/Redux/store";
+import { getTranslation } from "../utils/i18n";
 
 interface SystemDetailWidgetProps {
 	category: string;
@@ -15,18 +16,28 @@ export const SystemDetailWidget: React.FC<SystemDetailWidgetProps> = ({
 }) => {
 	const [detail, setDetail] = useState({
 		title: "",
-		description: "No details available.",
+		description: "",
 	});
 	const navigate = useNavigate();
 	const selectedCategory = useSelector(
 		(state: RootState) => state.category.selectedCategory,
 	);
+	const currentLanguage = useSelector(
+		(state: RootState) => state.language.currentLanguage,
+	);
+	const t = getTranslation(currentLanguage);
+
 	useEffect(() => {
 		console.log(category);
 		if (category !== "total") {
 			setDetail(systemDetailMockData[0]);
+		} else {
+			setDetail({
+				title: "",
+				description: t.systemDetail.noDetailsAvailable,
+			});
 		}
-	}, [category]);
+	}, [category, t.systemDetail.noDetailsAvailable]);
 
 	const ViewReport = () => {
 		navigate(`/dashboard/${selectedCategory}`);
@@ -43,7 +54,7 @@ export const SystemDetailWidget: React.FC<SystemDetailWidgetProps> = ({
 						className={styles["SystemDetailWidget-report-text"]}
 						onClick={ViewReport}
 					>
-						View report
+						{t.systemDetail.viewReport}
 						<Report />
 					</button>
 				</div>
